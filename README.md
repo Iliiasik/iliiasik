@@ -13,4 +13,6 @@
   </tr>
 </table>
 
+![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=Iliiasik&layout=compact&theme=tokyonight&hide_border=true)
+
 </div>
