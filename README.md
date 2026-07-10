@@ -1,3 +1,5 @@
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/5746e961-ddfa-4969-a9a8-1f4237dcce3a" alt="flower" width="200"/><img src="https://github.com/user-attachments/assets/14b1f897-7d7d-4155-aa18-16a9b97175c7" alt="pngegg" width="200"/>
+  <img width="240" height="135" alt="Zack and Aerith" src="https://github.com/user-attachments/assets/1d48ea8c-39d3-497d-88f6-e3f0f7fcbab7" />
+  <img width="240" height="135" alt="Resident Evil Capcom GIF" src="https://github.com/user-attachments/assets/917a69fe-bc09-4b5d-a701-41d9214c8ad5" />
+  <img width="240" height="135" alt="Here I Come Jujutsu Kaisen GIF" src="https://github.com/user-attachments/assets/e110cef3-4d0c-41e3-a8d2-8e6cf8d9a10e" />
 </p>
