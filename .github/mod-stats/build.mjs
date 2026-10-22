@@ -1,13 +1,15 @@
-import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
+import { readFile, writeFile, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
-const STATS_PATH = path.join(DIR, "stats.json");
-const CARD_PATH = path.join(DIR, "card.svg");
+const OUT_DIR = path.resolve(process.env.OUT_DIR ?? DIR);
+const STATS_PATH = path.join(OUT_DIR, "stats.json");
+const CARD_PATH = path.join(OUT_DIR, "card.svg");
 const config = JSON.parse(await readFile(path.join(DIR, "config.json"), "utf8"));
+await mkdir(OUT_DIR, { recursive: true });
 
 const W = 840;
 const P = 28;
@@ -95,7 +97,7 @@ async function shrinkAnimation(img, width) {
 async function loadBackground() {
   const bg = config.background;
   if (!bg) return null;
-  const cachePath = path.join(DIR, bg.cache ?? "background.webp");
+  const cachePath = path.join(OUT_DIR, bg.cache ?? "background.webp");
   try {
     const buf = await readFile(cachePath);
     console.log(`background from cache ${path.basename(cachePath)}, ${Math.round(buf.length / 1024)}KB`);
@@ -349,5 +351,5 @@ const [background, avatar, ...icons] = await Promise.all([
 const updated = new Date().toISOString().slice(0, 10);
 
 await writeFile(CARD_PATH, render({ projects, totals, avatar, icons, background, updated }));
-await writeFile(STATS_PATH, JSON.stringify({ ...data, totals, updatedAt: new Date().toISOString() }, null, 2) + "\n");
+await writeFile(STATS_PATH, JSON.stringify({ ...data, totals }, null, 2) + "\n");
 console.log(`total ${totals.all} (modrinth ${totals.modrinth}, curseforge ${totals.curseforge})`);
