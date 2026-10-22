@@ -11,18 +11,6 @@ const config = JSON.parse(await readFile(path.join(DIR, "config.json"), "utf8"))
 
 const W = 840;
 const P = 28;
-const BROWSER_UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
-const CF_CLASSES = {
-  "mc-mods": 6,
-  "texture-packs": 12,
-  "modpacks": 4471,
-  "worlds": 17,
-  "customization": 4546,
-  "data-packs": 6945,
-  "shaders": 6552,
-  "bukkit-plugins": 5,
-};
 const FONT = "'Segoe UI', -apple-system, BlinkMacSystemFont, Ubuntu, 'Helvetica Neue', Arial, sans-serif";
 
 const T = {
@@ -113,31 +101,13 @@ async function loadBackground() {
     console.log(`background from cache ${path.basename(cachePath)}, ${Math.round(buf.length / 1024)}KB`);
     return dataUri({ type: "image/webp", buf });
   } catch {}
-  let img = null;
-  if (bg.file) {
-    try {
-      const buf = await readFile(path.join(DIR, bg.file));
-      const ext = path.extname(bg.file).slice(1).toLowerCase();
-      img = { type: ext === "jpg" ? "image/jpeg" : `image/${ext}`, buf };
-    } catch {
-      img = null;
-    }
-  }
-  img ??= await download(bg.url);
+  const img = await download(bg.url);
   if (!img) return null;
   console.log(`background downloaded, ${Math.round(img.buf.length / 1024)}KB, converting`);
   const small = await shrinkAnimation(img, bg.width ?? W);
   console.log(`background ${Math.round(img.buf.length / 1024)}KB -> ${Math.round(small.buf.length / 1024)}KB`);
-  if (small.type === "image/webp" && !process.env.MOCK) await writeFile(cachePath, small.buf);
+  if (small.type === "image/webp") await writeFile(cachePath, small.buf);
   return dataUri(small);
-}
-
-function parseCount(text) {
-  const t = String(text ?? "").trim().replace(/,/g, "");
-  const m = t.match(/^([\d.]+)\s*([KMB])?$/i);
-  if (!m) return NaN;
-  const mult = { K: 1e3, M: 1e6, B: 1e9 }[m[2]?.toUpperCase()] ?? 1;
-  return Math.round(parseFloat(m[1]) * mult);
 }
 
 function fmt(n) {
@@ -168,70 +138,36 @@ async function fetchModrinth(user) {
   };
 }
 
-async function fetchCurseForgeApi(list, key) {
-  const headers = { "x-api-key": key, Accept: "application/json" };
-  const results = [];
-  for (const { slug, category = "mc-mods" } of list) {
-    try {
-      const params = new URLSearchParams({ gameId: "432", slug });
-      if (CF_CLASSES[category]) params.set("classId", String(CF_CLASSES[category]));
-      const { data } = await getJson(`https://api.curseforge.com/v1/mods/search?${params}`, headers);
-      const mod = data.find((m) => m.slug === slug);
-      if (!mod) throw new Error("project not found");
-      const downloads = Math.round(mod.downloadCount);
-      results.push({
-        slug,
-        category,
-        title: mod.name,
-        downloads,
-        iconUrl: mod.logo?.thumbnailUrl ?? mod.logo?.url ?? null,
-      });
-      console.log(`curseforge api ok   ${slug}: ${downloads}`);
-    } catch (err) {
-      console.error(`curseforge api fail ${slug}: ${err.message}`);
-      results.push({ slug, category, error: err.message });
-    }
-  }
-  return results;
-}
-
 async function fetchCurseForge(list) {
-  if (process.env.CURSEFORGE_API_KEY) return fetchCurseForgeApi(list, process.env.CURSEFORGE_API_KEY);
-  if (!list.length) return [];
-  const { chromium } = await import("playwright");
-  const browser = await chromium.launch({ headless: true, timeout: 60_000 });
-  const page = await browser.newPage({ userAgent: BROWSER_UA });
   const results = [];
-
   for (const { slug, category = "mc-mods" } of list) {
-    const url = `https://www.curseforge.com/minecraft/${category}/${slug}`;
+    const url = `https://api.cfwidget.com/minecraft/${category}/${slug}`;
     try {
-      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45_000 });
-      await page.waitForSelector("dt", { timeout: 30_000 });
-      const { text, title } = await page.evaluate(() => {
-        const dt = [...document.querySelectorAll("dt")].find((el) => el.textContent?.trim() === "Downloads");
-        return {
-          text: dt?.nextElementSibling?.textContent?.trim() ?? null,
-          title: document.querySelector("h1")?.textContent?.trim() ?? null,
-        };
-      });
-      const downloads = parseCount(text);
-      if (!Number.isFinite(downloads)) throw new Error(`no "Downloads" value (got ${JSON.stringify(text)})`);
-      results.push({ slug, category, title, downloads });
+      let body = null;
+      for (let attempt = 0; attempt < 4 && !body; attempt++) {
+        const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+        if (res.status === 202) {
+          await new Promise((r) => setTimeout(r, 10_000));
+          continue;
+        }
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        body = await res.json();
+      }
+      if (!body) throw new Error("project is still queued on cfwidget");
+      if (body.error) throw new Error(String(body.error));
+      const downloads = Math.round(body.downloads?.total);
+      if (!Number.isFinite(downloads)) throw new Error("no downloads.total in response");
+      results.push({ slug, category, title: body.title ?? slug, downloads, iconUrl: body.thumbnail ?? null });
       console.log(`curseforge ok   ${slug}: ${downloads}`);
     } catch (err) {
       console.error(`curseforge fail ${slug}: ${err.message}`);
       results.push({ slug, category, error: err.message });
     }
   }
-
-  await browser.close();
   return results;
 }
 
 async function collect(previous) {
-  if (process.env.MOCK) return readJson(process.env.MOCK, null);
-
   let modrinth = previous?.modrinth ?? { avatarUrl: null, projects: [] };
   try {
     modrinth = await fetchModrinth(config.modrinthUser);
@@ -241,14 +177,8 @@ async function collect(previous) {
   }
 
   const prevCf = new Map((previous?.curseforge ?? []).map((p) => [p.slug, p]));
-  let scraped;
-  try {
-    scraped = await fetchCurseForge(config.curseforge ?? []);
-  } catch (err) {
-    console.error(`curseforge fail, keeping previous numbers: ${err.message}`);
-    scraped = (config.curseforge ?? []).map((p) => ({ ...p, error: err.message }));
-  }
-  const curseforge = scraped.map((p) => (p.error ? (prevCf.get(p.slug) ?? null) : p)).filter(Boolean);
+  const fetched = await fetchCurseForge(config.curseforge ?? []);
+  const curseforge = fetched.map((p) => (p.error ? (prevCf.get(p.slug) ?? null) : p)).filter(Boolean);
 
   return { modrinth, curseforge };
 }
@@ -408,7 +338,6 @@ setTimeout(() => {
 
 const previous = await readJson(STATS_PATH, null);
 const data = await collect(previous);
-if (!data) throw new Error("no data");
 
 const { projects, totals } = combine(data);
 const shown = projects.slice(0, config.showProjects ?? 5);
@@ -420,7 +349,5 @@ const [background, avatar, ...icons] = await Promise.all([
 const updated = new Date().toISOString().slice(0, 10);
 
 await writeFile(CARD_PATH, render({ projects, totals, avatar, icons, background, updated }));
-if (!process.env.MOCK) {
-  await writeFile(STATS_PATH, JSON.stringify({ ...data, totals, updatedAt: new Date().toISOString() }, null, 2) + "\n");
-}
+await writeFile(STATS_PATH, JSON.stringify({ ...data, totals, updatedAt: new Date().toISOString() }, null, 2) + "\n");
 console.log(`total ${totals.all} (modrinth ${totals.modrinth}, curseforge ${totals.curseforge})`);
