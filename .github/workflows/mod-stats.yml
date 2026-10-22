@@ -1,0 +1,43 @@
+name: Mod stats card
+
+on:
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mod-stats
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install tools
+        working-directory: .github/mod-stats
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          npm install --no-audit --no-fund --no-package-lock
+          npx playwright install --with-deps chromium
+
+      - name: Build card
+        run: node .github/mod-stats/build.mjs
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/mod-stats/stats.json .github/mod-stats/card.svg
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: update mod stats card"
+          git push
