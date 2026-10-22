@@ -3,30 +3,30 @@
     "avatarUrl": "https://cdn.modrinth.com/data/SGzUBE47/b4a0a73a4ab0b378cd99f0c5073ec4083ef5a0d7_96.webp",
     "projects": [
       {
-        "slug": "midnight-thoughts",
-        "title": "Midnight Thoughts",
-        "downloads": 21210,
-        "iconUrl": "https://cdn.modrinth.com/data/rZVE31wM/3a2f7923d4106af705774f0ee1b98bf5b58709fe.gif"
-      },
-      {
         "slug": "artistry-live",
         "title": "Artistry Live",
-        "downloads": 6091,
+        "downloads": 6093,
         "iconUrl": "https://cdn.modrinth.com/data/bGZucUcH/2c189ec65f3990b8f58bb9b69d477ec5fbb78c81.png"
       },
       {
         "slug": "midnight-nightmares",
         "title": "Midnight Nightmares",
-        "downloads": 157689,
+        "downloads": 157909,
         "iconUrl": "https://cdn.modrinth.com/data/1sbqFSzs/e7f5f610f98ee0794f2089cf813d0082804259d6.gif"
+      },
+      {
+        "slug": "midnight-thoughts",
+        "title": "Midnight Thoughts",
+        "downloads": 21216,
+        "iconUrl": "https://cdn.modrinth.com/data/rZVE31wM/3a2f7923d4106af705774f0ee1b98bf5b58709fe.gif"
       }
     ]
   },
   "curseforge": [],
   "totals": {
-    "modrinth": 184990,
+    "modrinth": 185218,
     "curseforge": 0,
-    "all": 184990
+    "all": 185218
   },
-  "updatedAt": "2026-10-22T16:20:24.233Z"
+  "updatedAt": "2026-10-22T17:23:38.421Z"
 }
