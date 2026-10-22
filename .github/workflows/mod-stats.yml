@@ -50,4 +50,8 @@ jobs:
           git add .github/mod-stats
           git diff --cached --quiet && exit 0
           git commit -m "chore: update mod stats card"
-          git push
+          for attempt in 1 2 3; do
+            git pull --rebase -X theirs origin "$GITHUB_REF_NAME" && git push && exit 0
+            sleep 5
+          done
+          exit 1
