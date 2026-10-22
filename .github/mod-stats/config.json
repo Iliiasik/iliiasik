@@ -3,15 +3,25 @@
   "subtitle": "Minecraft mods",
   "modrinthUser": "Iliiasik",
   "curseforge": [
-    { "slug": "midnight-thoughts", "category": "mc-mods" },
-    { "slug": "midnight-nightmares", "category": "mc-mods" },
-    { "slug": "artistry-live", "category": "mc-mods" }
+    {
+      "slug": "midnight-thoughts",
+      "category": "mc-mods"
+    },
+    {
+      "slug": "midnight-nightmares",
+      "category": "mc-mods"
+    },
+    {
+      "slug": "artistry-live",
+      "category": "mc-mods"
+    }
   ],
   "pairs": {},
   "showProjects": 5,
   "background": {
     "url": "https://github.com/user-attachments/assets/1d48ea8c-39d3-497d-88f6-e3f0f7fcbab7",
     "file": "background.gif",
+    "cache": "background.webp",
     "dim": 0.6,
     "blur": 1.5,
     "width": 840,

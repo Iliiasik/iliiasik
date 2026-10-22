@@ -18,6 +18,7 @@ jobs:
     timeout-minutes: 15
     env:
       DEBIAN_FRONTEND: noninteractive
+      CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -25,11 +26,16 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install tools
-        working-directory: .github/mod-stats
+      - name: Install ffmpeg
+        if: hashFiles('.github/mod-stats/background.webp') == ''
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
+
+      - name: Install Playwright
+        if: env.CURSEFORGE_API_KEY == ''
+        working-directory: .github/mod-stats
+        run: |
           npm install --no-audit --no-fund --no-package-lock
           npx playwright install --with-deps chromium
 
@@ -41,7 +47,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/mod-stats/stats.json .github/mod-stats/card.svg
+          git add .github/mod-stats
           git diff --cached --quiet && exit 0
           git commit -m "chore: update mod stats card"
           git push

@@ -13,6 +13,16 @@ const W = 840;
 const P = 28;
 const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
+const CF_CLASSES = {
+  "mc-mods": 6,
+  "texture-packs": 12,
+  "modpacks": 4471,
+  "worlds": 17,
+  "customization": 4546,
+  "data-packs": 6945,
+  "shaders": 6552,
+  "bukkit-plugins": 5,
+};
 const FONT = "'Segoe UI', -apple-system, BlinkMacSystemFont, Ubuntu, 'Helvetica Neue', Arial, sans-serif";
 
 const T = {
@@ -97,6 +107,12 @@ async function shrinkAnimation(img, width) {
 async function loadBackground() {
   const bg = config.background;
   if (!bg) return null;
+  const cachePath = path.join(DIR, bg.cache ?? "background.webp");
+  try {
+    const buf = await readFile(cachePath);
+    console.log(`background from cache ${path.basename(cachePath)}, ${Math.round(buf.length / 1024)}KB`);
+    return dataUri({ type: "image/webp", buf });
+  } catch {}
   let img = null;
   if (bg.file) {
     try {
@@ -112,6 +128,7 @@ async function loadBackground() {
   console.log(`background downloaded, ${Math.round(img.buf.length / 1024)}KB, converting`);
   const small = await shrinkAnimation(img, bg.width ?? W);
   console.log(`background ${Math.round(img.buf.length / 1024)}KB -> ${Math.round(small.buf.length / 1024)}KB`);
+  if (small.type === "image/webp" && !process.env.MOCK) await writeFile(cachePath, small.buf);
   return dataUri(small);
 }
 
@@ -151,7 +168,35 @@ async function fetchModrinth(user) {
   };
 }
 
+async function fetchCurseForgeApi(list, key) {
+  const headers = { "x-api-key": key, Accept: "application/json" };
+  const results = [];
+  for (const { slug, category = "mc-mods" } of list) {
+    try {
+      const params = new URLSearchParams({ gameId: "432", slug });
+      if (CF_CLASSES[category]) params.set("classId", String(CF_CLASSES[category]));
+      const { data } = await getJson(`https://api.curseforge.com/v1/mods/search?${params}`, headers);
+      const mod = data.find((m) => m.slug === slug);
+      if (!mod) throw new Error("project not found");
+      const downloads = Math.round(mod.downloadCount);
+      results.push({
+        slug,
+        category,
+        title: mod.name,
+        downloads,
+        iconUrl: mod.logo?.thumbnailUrl ?? mod.logo?.url ?? null,
+      });
+      console.log(`curseforge api ok   ${slug}: ${downloads}`);
+    } catch (err) {
+      console.error(`curseforge api fail ${slug}: ${err.message}`);
+      results.push({ slug, category, error: err.message });
+    }
+  }
+  return results;
+}
+
 async function fetchCurseForge(list) {
+  if (process.env.CURSEFORGE_API_KEY) return fetchCurseForgeApi(list, process.env.CURSEFORGE_API_KEY);
   if (!list.length) return [];
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ headless: true, timeout: 60_000 });
@@ -219,6 +264,7 @@ function combine({ modrinth, curseforge }) {
     const key = pairs[p.slug] ?? p.slug;
     const entry = bySlug.get(key) ?? { title: p.title ?? p.slug, iconUrl: null, modrinth: 0, curseforge: 0 };
     entry.curseforge = p.downloads;
+    entry.iconUrl ??= p.iconUrl ?? null;
     bySlug.set(key, entry);
   }
 
@@ -350,7 +396,7 @@ function render({ projects, totals, avatar, icons, background, updated }) {
 
   ${rows.length ? `<line x1="${P}" y1="176" x2="${W - P}" y2="176" stroke="${T.border}"/>` : ""}
   ${rowsSvg}
-  ${rows.length ? `<text x="${W - P}" y="${H - 14}" text-anchor="end" font-size="11" fill="${T.muted}" ${shadow}>updated ${esc(updated)}</text>` : ""}
+  ${rows.length ? `<text x="${W - P}" y="${H - 14}" text-anchor="end" font-size="11" fill="${T.muted}" ${shadow}>${esc(updated)}</text>` : ""}
 </svg>
 `;
 }
