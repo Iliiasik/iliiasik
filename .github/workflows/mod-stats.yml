@@ -15,6 +15,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DEBIAN_FRONTEND: noninteractive
     steps:
       - uses: actions/checkout@v4
 
@@ -31,6 +34,7 @@ jobs:
           npx playwright install --with-deps chromium
 
       - name: Build card
+        timeout-minutes: 10
         run: node .github/mod-stats/build.mjs
 
       - name: Commit

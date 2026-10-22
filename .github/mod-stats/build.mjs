@@ -35,7 +35,7 @@ async function readJson(file, fallback) {
 }
 
 async function getJson(url, headers = {}) {
-  const res = await fetch(url, { headers });
+  const res = await fetch(url, { headers, signal: AbortSignal.timeout(30_000) });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
   return res.json();
 }
@@ -43,7 +43,7 @@ async function getJson(url, headers = {}) {
 async function download(url) {
   if (!url) return null;
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(60_000) });
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
     return {
       type: res.headers.get("content-type")?.split(";")[0] || "image/png",
@@ -64,7 +64,7 @@ async function iconUri(url) {
 }
 
 function hasFfmpeg() {
-  return spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status === 0;
+  return spawnSync("ffmpeg", ["-version"], { stdio: "ignore", timeout: 10_000 }).status === 0;
 }
 
 async function shrinkAnimation(img, width) {
@@ -80,7 +80,7 @@ async function shrinkAnimation(img, width) {
         "-vf", `scale='min(${width},iw)':-2:flags=lanczos`,
         "-c:v", codec, "-quality", String(config.background?.quality ?? 70),
         "-loop", "0", "-an", output,
-      ]);
+      ], { timeout: 120_000, stdio: "ignore" });
       if (run.status !== 0) continue;
       const buf = await readFile(output);
       if (buf.length && buf.length < img.buf.length) return { type: "image/webp", buf };
@@ -109,6 +109,7 @@ async function loadBackground() {
   }
   img ??= await download(bg.url);
   if (!img) return null;
+  console.log(`background downloaded, ${Math.round(img.buf.length / 1024)}KB, converting`);
   const small = await shrinkAnimation(img, bg.width ?? W);
   console.log(`background ${Math.round(img.buf.length / 1024)}KB -> ${Math.round(small.buf.length / 1024)}KB`);
   return dataUri(small);
@@ -153,7 +154,7 @@ async function fetchModrinth(user) {
 async function fetchCurseForge(list) {
   if (!list.length) return [];
   const { chromium } = await import("playwright");
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, timeout: 60_000 });
   const page = await browser.newPage({ userAgent: BROWSER_UA });
   const results = [];
 
@@ -353,6 +354,11 @@ function render({ projects, totals, avatar, icons, background, updated }) {
 </svg>
 `;
 }
+
+setTimeout(() => {
+  console.error("build took longer than 8 minutes, aborting");
+  process.exit(1);
+}, 8 * 60_000).unref();
 
 const previous = await readJson(STATS_PATH, null);
 const data = await collect(previous);
