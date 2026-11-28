@@ -1,0 +1,53 @@
+{
+  "modrinth": {
+    "avatarUrl": "https://cdn.modrinth.com/data/SGzUBE47/f9b5df52440aa6dd05f7e7c995d1bd3a198494d5_96.webp",
+    "projects": [
+      {
+        "slug": "artistry-live",
+        "title": "Artistry Live",
+        "downloads": 7155,
+        "iconUrl": "https://cdn.modrinth.com/data/bGZucUcH/18de837de61acc35b326754da8d0d0b58a3f221a.gif"
+      },
+      {
+        "slug": "midnight-nightmares",
+        "title": "Midnight Nightmares",
+        "downloads": 140438,
+        "iconUrl": "https://cdn.modrinth.com/data/1sbqFSzs/e7f5f610f98ee0794f2089cf813d0082804259d6.gif"
+      },
+      {
+        "slug": "midnight-thoughts",
+        "title": "Midnight Thoughts",
+        "downloads": 23819,
+        "iconUrl": "https://cdn.modrinth.com/data/rZVE31wM/3a2f7923d4106af705774f0ee1b98bf5b58709fe.gif"
+      }
+    ]
+  },
+  "curseforge": [
+    {
+      "slug": "midnight-thoughts",
+      "category": "mc-mods",
+      "title": "Midnight Thoughts",
+      "downloads": 290336,
+      "iconUrl": "https://media.forgecdn.net/avatars/2208/163/639303305458844095.webp"
+    },
+    {
+      "slug": "midnight-nightmares",
+      "category": "mc-mods",
+      "title": "Midnight Nightmares",
+      "downloads": 243784,
+      "iconUrl": "https://media.forgecdn.net/avatars/1886/693/639180732910336209.webp"
+    },
+    {
+      "slug": "artistry-live",
+      "category": "mc-mods",
+      "title": "Artistry Live",
+      "downloads": 8153,
+      "iconUrl": "https://media.forgecdn.net/avatars/2208/193/639303312125195968.webp"
+    }
+  ],
+  "totals": {
+    "modrinth": 171412,
+    "curseforge": 542273,
+    "all": 713685
+  }
+}
